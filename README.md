@@ -1,4 +1,4 @@
-# Educational Video Streaming Platform with Microservices architecture and full CI/CD Pipeline
+# Educational Video Streaming Platform
 
 ## Overview
 
