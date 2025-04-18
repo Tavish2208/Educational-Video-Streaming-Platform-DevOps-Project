@@ -15,18 +15,19 @@ const Videolist: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // First fetch videos
+        // Fetch videos
         const videoList = await getVideos();
         setVideos(videoList);
         console.log("Fetched videos:", videoList);
 
-        // Then try to fetch watchlist
+        // Fetch watchlist
         try {
           const watchlist = await getWatchlist();
+          console.log("Fetched watchlist:", watchlist);
           setWatchlistIds(watchlist.map((video: Video) => video.id));
         } catch (watchlistError) {
-          console.log("Watchlist service not available, continuing without watchlist");
-          setWatchlistIds([]);
+          console.warn("Watchlist service not available, continuing without watchlist:", watchlistError);
+          setWatchlistIds([]); // Fallback to an empty watchlist
         }
       } catch (error) {
         console.error("Error fetching videos:", error);

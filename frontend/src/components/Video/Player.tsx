@@ -12,6 +12,7 @@ const Player: React.FC = () => {
   const [videoData, setVideoData] = useState<Video | null>(null);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [error, setError] = useState<string>("");
+  const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const { videoId } = useParams<{ videoId: string }>();
   const history = useHistory();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -35,8 +36,8 @@ const Player: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [videoUrl, watchlist] = await Promise.all([getVideoUrl(videoId), getWatchlist()]);
-
+        // Fetch video details
+        const videoUrl = await getVideoUrl(videoId);
         const videoInfo: Video = {
           id: videoId,
           url: videoUrl,
@@ -44,15 +45,31 @@ const Player: React.FC = () => {
           description: "",
           thumbnailUrl: "",
         };
-
         setVideoData(videoInfo);
-        setIsInWatchlist(watchlist.some((v: Video) => v.id === videoId));
+
+        // Fetch watchlist
+        try {
+          const watchlist = await getWatchlist();
+          console.log("Fetched watchlist:", watchlist);
+          setWatchlistIds(watchlist.map((video: Video) => video.id));
+          setIsInWatchlist(watchlist.some((v: Video) => v.id === videoId));
+        } catch (watchlistError) {
+          console.warn("Watchlist service not available, continuing without watchlist:", watchlistError);
+          setWatchlistIds([]); // Fallback to an empty watchlist
+        }
       } catch (error) {
-        handleError(error);
+        console.error("Error fetching video or watchlist:", error);
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 401) {
+            history.push("/login");
+          } else {
+            setError("Failed to load video. Please try again later.");
+          }
+        }
       }
     };
     fetchData();
-  }, [videoId, history, handleError]);
+  }, [videoId, history]);
 
   const handleWatchlistToggle = async () => {
     try {

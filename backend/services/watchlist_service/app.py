@@ -34,8 +34,8 @@ def get_watchlist():
     try:
         user_id = get_jwt_identity()
         user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") != "student":
-            return jsonify({"error": "Student access required"}), 403
+        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
+            return jsonify({"error": "Access denied"}), 403
 
         user_watchlist = watchlists.find_one({"user_id": user_id})
         return jsonify(user_watchlist.get("videos", []) if user_watchlist else [])
@@ -49,8 +49,8 @@ def add_to_watchlist():
     try:
         user_id = get_jwt_identity()
         user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") != "student":
-            return jsonify({"error": "Student access required"}), 403
+        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
+            return jsonify({"error": "Access denied"}), 403
 
         video_data = request.get_json()
         watchlists.update_one({"user_id": user_id}, {"$addToSet": {"videos": video_data}}, upsert=True)
@@ -65,8 +65,8 @@ def remove_from_watchlist(video_id):
     try:
         user_id = get_jwt_identity()
         user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") != "student":
-            return jsonify({"error": "Student access required"}), 403
+        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
+            return jsonify({"error": "Access denied"}), 403
 
         watchlists.update_one({"user_id": user_id}, {"$pull": {"videos": {"id": video_id}}})
         return jsonify({"message": "Video removed from watchlist"}), 200

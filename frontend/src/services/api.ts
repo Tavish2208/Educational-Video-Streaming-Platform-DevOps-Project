@@ -4,7 +4,7 @@ import { Video } from "../types/types";
 
 axios.defaults.withCredentials = true;
 
-// API functions
+// Setup Axios Interceptors
 export const setupAxiosInterceptors = () => {
   axios.defaults.withCredentials = true;
 
@@ -18,13 +18,7 @@ export const setupAxiosInterceptors = () => {
         window.location.href = "/login";
       } else if (error.response?.status === 403) {
         if (error.response?.data?.error === "Student or teacher access required") {
-          // Show a user-friendly message
           alert("You need to be logged in as a student or teacher to access this content.");
-          window.location.href = "/login";
-        } else if (!error.config.url?.includes("/watchlist")) {
-          localStorage.removeItem("isAdmin");
-          localStorage.removeItem("isAuthenticated");
-          localStorage.removeItem("role");
           window.location.href = "/login";
         }
       }
@@ -33,15 +27,25 @@ export const setupAxiosInterceptors = () => {
   );
 };
 
-// Keep existing API functions, but make sure they use withCredentials
+// API Functions
 export const getVideos = async () => {
   const response = await axios.get(`${API_ENDPOINTS.VIDEO}/videos`, { withCredentials: true });
   return response.data;
 };
 
 export const getWatchlist = async () => {
-  const response = await axios.get(`${API_ENDPOINTS.WATCHLIST}/watchlist`, { withCredentials: true });
-  return response.data;
+    try {
+        const response = await axios.get(`${API_ENDPOINTS.WATCHLIST}/watchlist`, { withCredentials: true });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status === 403) {
+                console.warn("Access denied to watchlist. Ensure the user has the correct role.");
+                throw new Error("Access denied to watchlist");
+            }
+        }
+        throw error;
+    }
 };
 
 export const addToWatchlist = async (video: Video) => {
@@ -67,6 +71,7 @@ export const removeFromWatchlist = async (videoId: string) => {
     return false;
   }
 };
+
 export const uploadVideo = async (formData: FormData) => {
   try {
     const response = await axios.post(`${API_ENDPOINTS.VIDEO}/videos/upload`, formData, {
@@ -133,6 +138,7 @@ export const updateVideoMetadata = async (
 ) => {
   return axios.put(`${API_ENDPOINTS.VIDEO}/videos/${videoId}/metadata`, metadata, { withCredentials: true });
 };
+
 // export const setupAxiosInterceptors = () => {
 //   axios.defaults.withCredentials = true; // Enable cookies
 
