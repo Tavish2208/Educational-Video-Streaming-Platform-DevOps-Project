@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+  frontend:
+    container_name: frontend
+    image: ${DOCKER_REPO}:frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth_service
+      - video_service
+      - watchlist_service
+    environment:
+      - EC2_PUBLIC_IP=${EC2_PUBLIC_IP}
+      - DEPLOYMENT_ENV=development
+      - PORT=8080
+    networks:
+      - app_network
+
+  auth_service:
+    container_name: auth_service
+    image: ${DOCKER_REPO}:auth_service
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY}
+    networks:
+      - app_network
+
+  video_service:
+    container_name: video_service
+    image: ${DOCKER_REPO}:video_service
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - S3_BUCKET=${S3_BUCKET}
+      - AWS_REGION=${AWS_REGION}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY}
+    networks:
+      - app_network
+
+  watchlist_service:
+    container_name: watchlist_service
+    image: ${DOCKER_REPO}:watchlist_service
+    ports:
+      - "5002:5002"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY}
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

@@ -1,0 +1,5 @@
+.env
+node_modules
+ci-cd_gitlab_deployment_keys.pem
+build
+nginx.conf
