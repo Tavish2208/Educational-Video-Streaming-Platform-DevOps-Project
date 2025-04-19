@@ -32,14 +32,15 @@ jwt = JWTManager(app)
 @jwt_required()
 def get_watchlist():
     try:
-        user_id = get_jwt_identity()
-        user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
-            return jsonify({"error": "Access denied"}), 403
+        # Fetch all videos in the watchlist collection
+        all_watchlists = watchlists.find({})
+        videos = []
+        for watchlist in all_watchlists:
+            videos.extend(watchlist.get("videos", []))  # Collect all videos
 
-        user_watchlist = watchlists.find_one({"user_id": user_id})
-        return jsonify(user_watchlist.get("videos", []) if user_watchlist else [])
+        return jsonify(videos)  # Return all videos
     except Exception as e:
+        app.logger.error(f"Error fetching watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -47,15 +48,12 @@ def get_watchlist():
 @jwt_required()
 def add_to_watchlist():
     try:
-        user_id = get_jwt_identity()
-        user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
-            return jsonify({"error": "Access denied"}), 403
-
         video_data = request.get_json()
-        watchlists.update_one({"user_id": user_id}, {"$addToSet": {"videos": video_data}}, upsert=True)
+        # Add the video to a global watchlist (not tied to a specific user)
+        watchlists.update_one({"global": True}, {"$addToSet": {"videos": video_data}}, upsert=True)
         return jsonify({"message": "Video added to watchlist"}), 200
     except Exception as e:
+        app.logger.error(f"Error adding to watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -63,14 +61,11 @@ def add_to_watchlist():
 @jwt_required()
 def remove_from_watchlist(video_id):
     try:
-        user_id = get_jwt_identity()
-        user = db.users.find_one({"_id": user_id})
-        if not user or user.get("role") not in ["student", "teacher"]:  # Allow both roles
-            return jsonify({"error": "Access denied"}), 403
-
-        watchlists.update_one({"user_id": user_id}, {"$pull": {"videos": {"id": video_id}}})
+        # Remove the video from the global watchlist
+        watchlists.update_one({"global": True}, {"$pull": {"videos": {"id": video_id}}})
         return jsonify({"message": "Video removed from watchlist"}), 200
     except Exception as e:
+        app.logger.error(f"Error removing video {video_id} from watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 

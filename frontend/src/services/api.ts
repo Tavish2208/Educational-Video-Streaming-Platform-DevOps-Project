@@ -12,18 +12,20 @@ export const setupAxiosInterceptors = () => {
     (response) => response,
     async (error) => {
       if (error.response?.status === 401) {
+        // Handle unauthorized access
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("isAuthenticated");
         localStorage.removeItem("role");
         window.location.href = "/login";
       } else if (error.response?.status === 403) {
+        // Handle forbidden access
         if (error.response?.data?.error === "Student or teacher access required") {
           alert("You need to be logged in as a student or teacher to access this content.");
           window.location.href = "/login";
         }
       }
       return Promise.reject(error);
-    },
+    }
   );
 };
 
@@ -34,18 +36,22 @@ export const getVideos = async () => {
 };
 
 export const getWatchlist = async () => {
-    try {
-        const response = await axios.get(`${API_ENDPOINTS.WATCHLIST}/watchlist`, { withCredentials: true });
-        return response.data;
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            if (error.response?.status === 403) {
-                console.warn("Access denied to watchlist. Ensure the user has the correct role.");
-                throw new Error("Access denied to watchlist");
-            }
-        }
-        throw error;
+  try {
+    const response = await axios.get(`${API_ENDPOINTS.WATCHLIST}/watchlist`, { withCredentials: true });
+    return response.data; // Return all videos in the watchlist
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 403) {
+        console.warn("Access denied to watchlist.");
+        throw new Error("Access denied to watchlist");
+      } else if (error.response?.status === 401) {
+        console.warn("Unauthorized access. Redirecting to login.");
+        window.location.href = "/login";
+      }
     }
+    console.error("Error fetching watchlist:", error);
+    throw new Error("Failed to fetch watchlist. Please try again later.");
+  }
 };
 
 export const addToWatchlist = async (video: Video) => {
@@ -100,11 +106,11 @@ export const uploadVideo = async (formData: FormData) => {
 
 export const getVideoUrl = async (videoId: string) => {
   try {
-    const response = await axios.get(`${API_ENDPOINTS.VIDEO}/videos/${videoId}/url`, { 
+    const response = await axios.get(`${API_ENDPOINTS.VIDEO}/videos/${videoId}/url`, {
       withCredentials: true,
       headers: {
         "Content-Type": "application/json",
-      }
+      },
     });
     if (response.data && response.data.url) {
       return response.data.url;
@@ -134,23 +140,15 @@ export const updateVideoMetadata = async (
     description: string;
     thumbnailUrl: string;
     duration?: string;
-  },
+  }
 ) => {
-  return axios.put(`${API_ENDPOINTS.VIDEO}/videos/${videoId}/metadata`, metadata, { withCredentials: true });
+  try {
+    const response = await axios.put(`${API_ENDPOINTS.VIDEO}/videos/${videoId}/metadata`, metadata, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error updating video metadata:", error);
+    throw error;
+  }
 };
-
-// export const setupAxiosInterceptors = () => {
-//   axios.defaults.withCredentials = true; // Enable cookies
-
-//   axios.interceptors.response.use(
-//     (response) => response,
-//     async (error) => {
-//       if (error.response?.status === 401) {
-//         // Clear local storage
-//         localStorage.removeItem("isAdmin");
-//         window.location.href = "/login";
-//       }
-//       return Promise.reject(error);
-//     },
-//   );
-// };
