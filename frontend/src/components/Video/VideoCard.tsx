@@ -2,18 +2,22 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Video } from "../../types/types";
 import "./VideoCard.style.css";
+import { useHistory } from "react-router-dom";
 
 interface VideoCardProps {
   video: Video;
-  onAddToWatchlist: (video: Video) => void;
-  isInWatchlist: boolean;
+  onAddToWatchlist?: (video: Video) => void;
+  isInWatchlist?: boolean;
+  isTeacherView?: boolean;
 }
 
-const VideoCard: React.FC<VideoCardProps> = ({ video, onAddToWatchlist, isInWatchlist }) => {
-  const handleWatchlistClick = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation when clicking the button
-    onAddToWatchlist(video);
-  };
+const VideoCard: React.FC<VideoCardProps> = ({
+  video,
+  onAddToWatchlist,
+  isInWatchlist = false,
+  isTeacherView = false
+}) => {
+  const history = useHistory();
 
   return (
     <div className="video-card">
@@ -28,9 +32,17 @@ const VideoCard: React.FC<VideoCardProps> = ({ video, onAddToWatchlist, isInWatc
           {video.uploadDate && <span className="video-upload-date">{new Date(video.uploadDate).toLocaleDateString()}</span>}
         </div>
       </Link>
-      <button className={`watchlist-button ${isInWatchlist ? "in-watchlist" : ""}`} onClick={handleWatchlistClick}>
-        {isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
-      </button>
+      {!isTeacherView && onAddToWatchlist && (
+        <button
+          className={`watchlist-button ${isInWatchlist ? "in-watchlist" : ""}`}
+          onClick={(e) => {
+            e.preventDefault(); // Prevent navigation when clicking the button
+            onAddToWatchlist(video);
+          }}
+        >
+          {isInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+        </button>
+      )}
     </div>
   );
 };

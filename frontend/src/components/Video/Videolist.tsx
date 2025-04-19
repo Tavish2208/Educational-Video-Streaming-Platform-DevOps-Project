@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, RouteComponentProps } from "react-router-dom";
 import { getVideos, addToWatchlist, removeFromWatchlist, getWatchlist } from "../../services/api";
 import { Video } from "../../types/types";
 import VideoCard from "./VideoCard";
 import "./Videolist.style.css";
 import axios from "axios";
 
-const Videolist: React.FC = () => {
+const Videolist: React.FC<RouteComponentProps> = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [watchlistIds, setWatchlistIds] = useState<string[]>([]);
   const [error, setError] = useState<string>("");

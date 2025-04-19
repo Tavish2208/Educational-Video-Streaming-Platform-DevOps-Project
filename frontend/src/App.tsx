@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { Switch, Route, useHistory } from "react-router-dom";
+import { Switch, Route, useHistory, RouteComponentProps } from "react-router-dom";
 import Header from "./components/Layout/Header";
 import Footer from "./components/Layout/Footer";
 import Login from "./components/Auth/Login";
@@ -11,6 +11,7 @@ import TeacherPanel from "./components/Teacher/TeacherPanel";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { setupAxiosInterceptors } from "./services/api";
 import AuthService from "./services/auth";
+import TeacherHome from "./components/Teacher/TeacherHome";
 
 setupAxiosInterceptors();
 
@@ -32,9 +33,26 @@ const App: React.FC = () => {
           <Route path="/login" component={Login} />
           <Route path="/register" component={Register} />
           <ProtectedRoute path="/watch/:videoId" component={Player} />
-          <ProtectedRoute path="/watchlist" component={Watchlist} requiresTeacher={false} />
-          <ProtectedRoute path="/teacher" component={TeacherPanel} requiresTeacher={true} />
-          <ProtectedRoute path="/" exact component={Videolist} />
+          <ProtectedRoute 
+            path="/watchlist" 
+            component={Watchlist} 
+            requiresTeacher={false} 
+          />
+          <ProtectedRoute 
+            path="/teacher" 
+            component={TeacherPanel} 
+            requiresTeacher={true} 
+          />
+          <ProtectedRoute
+            path="/"
+            exact
+            render={(props: RouteComponentProps) => {
+              if (AuthService.isTeacher()) {
+                return <TeacherHome {...props} />;
+              }
+              return <Videolist {...props} />;
+            }}
+          />
         </Switch>
       </main>
       <Footer />

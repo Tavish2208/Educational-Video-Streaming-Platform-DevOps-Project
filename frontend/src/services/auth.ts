@@ -1,6 +1,11 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api.config";
 
+interface User {
+  role: string;
+  // add other user properties as needed
+}
+
 const AuthService = {
   async login(email: string, password: string): Promise<void> {
     try {
@@ -15,12 +20,14 @@ const AuthService = {
         }
       );
 
-      // Store role
-      if (response.data.role) {
+      // Store user data and role
+      if (response.data) {
+        localStorage.setItem("user", JSON.stringify(response.data));
         localStorage.setItem("role", response.data.role);
+        localStorage.setItem("isAuthenticated", "true");
       }
-      localStorage.setItem("isAuthenticated", "true");
     } catch (error) {
+      localStorage.removeItem("user");
       localStorage.removeItem("role");
       localStorage.removeItem("isAuthenticated");
       throw error;
@@ -31,6 +38,7 @@ const AuthService = {
     try {
       await axios.post(`${API_ENDPOINTS.AUTH}/auth/logout`, {}, { withCredentials: true });
     } finally {
+      localStorage.removeItem("user");
       localStorage.removeItem("role");
       localStorage.removeItem("isAuthenticated");
     }
@@ -41,11 +49,11 @@ const AuthService = {
   },
 
   isStudent(): boolean {
-    return localStorage.getItem("role") === "student" && this.isAuthenticated();
+    return this.getRole() === "student" && this.isAuthenticated();
   },
 
   isTeacher(): boolean {
-    return localStorage.getItem("role") === "teacher" && this.isAuthenticated();
+    return this.getRole() === "teacher" && this.isAuthenticated();
   },
 
   isAuthenticated(): boolean {
@@ -53,7 +61,15 @@ const AuthService = {
   },
 
   isAdmin(): boolean {
-    return localStorage.getItem("role") === "admin" && this.isAuthenticated();
+    return this.getRole() === "admin" && this.isAuthenticated();
+  },
+
+  getCurrentUser(): User | null {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      return JSON.parse(userStr);
+    }
+    return null;
   },
 };
 
