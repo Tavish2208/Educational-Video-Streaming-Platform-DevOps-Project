@@ -11,24 +11,31 @@ const TeacherHome: React.FC<RouteComponentProps> = () => {
   const [error, setError] = useState<string>("");
   const history = useHistory();
 
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const videoList = await getVideos();
-        setVideos(videoList);
-      } catch (error) {
-        console.error("Error fetching videos:", error);
-        if (axios.isAxiosError(error)) {
-          if (error.response?.status === 401) {
-            history.push("/login");
-          } else {
-            setError("Failed to load videos. Please try again later.");
-          }
+  const fetchVideos = async () => {
+    try {
+      const videoList = await getVideos();
+      setVideos(videoList);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          history.push("/login");
+        } else {
+          setError("Failed to load videos. Please try again later.");
         }
       }
-    };
+    }
+  };
+
+  useEffect(() => {
     fetchVideos();
   }, [history]);
+
+  const handleDelete = async (videoId: string) => {
+    // Video is already deleted through the VideoCard component
+    // Just update the local state
+    setVideos(videos.filter(video => video.id !== videoId));
+  };
 
   return (
     <div className="teacher-home">
@@ -53,6 +60,7 @@ const TeacherHome: React.FC<RouteComponentProps> = () => {
               isTeacherView={true}
               onAddToWatchlist={undefined}
               isInWatchlist={false}
+              onDelete={handleDelete}
             />
           ))}
         </div>

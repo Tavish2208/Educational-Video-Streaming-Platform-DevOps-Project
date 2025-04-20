@@ -125,6 +125,54 @@
   background: #c53030;
 }
 
+.video-card .error-message {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #fff5f5;
+  color: #e53e3e;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  text-align: center;
+  border: 1px solid #feb2b2;
+}
+
+.delete-button {
+  margin: 0;
+  padding: 0.75rem;
+  border: none;
+  background: #e53e3e;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.delete-button:hover:not(:disabled) {
+  background: #c53030;
+}
+
+.delete-button:disabled {
+  background: #fc8181;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.delete-button.deleting {
+  position: relative;
+  cursor: not-allowed;
+  background: #fc8181;
+}
+
 @media (max-width: 1200px) {
   .video-info {
     padding: 0.625rem;

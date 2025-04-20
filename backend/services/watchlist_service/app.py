@@ -32,13 +32,17 @@ jwt = JWTManager(app)
 @jwt_required()
 def get_watchlist():
     try:
-        # Fetch all videos in the watchlist collection
-        all_watchlists = watchlists.find({})
-        videos = []
-        for watchlist in all_watchlists:
-            videos.extend(watchlist.get("videos", []))  # Collect all videos
+        # Get current user's ID
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Unauthorized"}), 401
 
-        return jsonify(videos)  # Return all videos
+        # Fetch the current user's watchlist
+        user_watchlist = watchlists.find_one({"user_id": current_user_id})
+        if not user_watchlist:
+            return jsonify([])  # Return empty list if no watchlist exists
+
+        return jsonify(user_watchlist.get("videos", []))
     except Exception as e:
         app.logger.error(f"Error fetching watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -48,10 +52,28 @@ def get_watchlist():
 @jwt_required()
 def add_to_watchlist():
     try:
+        # Get current user's ID
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
         video_data = request.get_json()
-        # Add the video to a global watchlist (not tied to a specific user)
-        watchlists.update_one({"global": True}, {"$addToSet": {"videos": video_data}}, upsert=True)
-        return jsonify({"message": "Video added to watchlist"}), 200
+        
+        # Add the video to the user's watchlist
+        result = watchlists.update_one(
+            {"user_id": current_user_id},
+            {
+                "$addToSet": {"videos": video_data},  # Use addToSet to avoid duplicates
+                "$setOnInsert": {"user_id": current_user_id}  # Set user_id if document is created
+            },
+            upsert=True  # Create new document if it doesn't exist
+        )
+
+        if result.modified_count > 0 or result.upserted_id:
+            return jsonify({"message": "Video added to watchlist"}), 200
+        else:
+            return jsonify({"message": "Video was already in watchlist"}), 200
+
     except Exception as e:
         app.logger.error(f"Error adding to watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500
@@ -61,9 +83,22 @@ def add_to_watchlist():
 @jwt_required()
 def remove_from_watchlist(video_id):
     try:
-        # Remove the video from the global watchlist
-        watchlists.update_one({"global": True}, {"$pull": {"videos": {"id": video_id}}})
-        return jsonify({"message": "Video removed from watchlist"}), 200
+        # Get current user's ID
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Remove the video from the user's watchlist
+        result = watchlists.update_one(
+            {"user_id": current_user_id},
+            {"$pull": {"videos": {"id": video_id}}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({"message": "Video removed from watchlist"}), 200
+        else:
+            return jsonify({"message": "Video was not in watchlist"}), 404
+
     except Exception as e:
         app.logger.error(f"Error removing video {video_id} from watchlist: {str(e)}")
         return jsonify({"error": str(e)}), 500

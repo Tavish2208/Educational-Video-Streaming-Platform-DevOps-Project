@@ -152,3 +152,25 @@ export const updateVideoMetadata = async (
     throw error;
   }
 };
+
+export const deleteVideo = async (videoId: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    await axios.delete(`${API_ENDPOINTS.VIDEO}/videos/${videoId}`, {
+      withCredentials: true,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting video:", error);
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 401) {
+        return { success: false, error: "Unauthorized. Please log in again." };
+      } else if (error.response?.status === 403) {
+        return { success: false, error: "You don't have permission to delete this video." };
+      } else if (error.response?.status === 404) {
+        return { success: false, error: "Video not found." };
+      }
+      return { success: false, error: error.response?.data?.message || "Server error occurred." };
+    }
+    return { success: false, error: "Network error occurred." };
+  }
+};

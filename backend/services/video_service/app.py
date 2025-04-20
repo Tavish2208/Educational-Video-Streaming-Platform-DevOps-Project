@@ -8,6 +8,7 @@ import os
 from dotenv import load_dotenv
 from botocore.config import Config
 from pymongo import MongoClient
+from urllib.parse import unquote
 
 # Load environment variables first
 load_dotenv()
@@ -81,32 +82,45 @@ def list_videos():
             print(f"Access denied for role: {user_role}")  # Debug log
             return jsonify({"error": "Student or teacher access required"}), 403
 
+        # First, get all videos from MongoDB
+        print("Fetching videos from MongoDB...")
+        mongo_videos = list(db.videos.find({}))
+        if not mongo_videos:
+            print("No videos found in MongoDB")
+            return jsonify([])
+
+        # Then check S3 for these videos
         print(f"Getting videos from S3 bucket: {BUCKET_NAME}")
-        response = s3.list_objects_v2(Bucket=BUCKET_NAME)
+        try:
+            response = s3.list_objects_v2(Bucket=BUCKET_NAME)
+        except Exception as e:
+            print(f"Error accessing S3: {str(e)}")
+            return jsonify({"error": "Failed to access video storage"}), 500
+
         videos = []
+        s3_files = {item["Key"].split("/")[-1].rsplit(".", 1)[0]: item["Key"] 
+                   for item in response.get("Contents", []) 
+                   if item["Key"].endswith((".mp4", ".webm"))}
 
-        if "Contents" in response:
-            print(f"Found {len(response['Contents'])} objects in S3")
-            for item in response["Contents"]:
-                print(f"Processing object: {item['Key']}")
-                if item["Key"].endswith((".mp4", ".webm")):
-                    video_id = item["Key"].split("/")[-1].rsplit(".", 1)[0]
-                    print(f"Found video: {video_id}")
-                    video_metadata = db.videos.find_one({"id": video_id}) or {}
-                    print(f"Video metadata: {video_metadata}")
+        print(f"Found {len(s3_files)} video files in S3")
 
-                    videos.append(
-                        {
-                            "id": video_id,
-                            "title": video_metadata.get("title", video_id),
-                            "description": video_metadata.get("description", ""),
-                            "thumbnailUrl": video_metadata.get("thumbnail_url", ""),
-                            "uploadDate": video_metadata.get("upload_date", item["LastModified"].isoformat()),
-                            "duration": video_metadata.get("duration", ""),
-                        }
-                    )
+        # Only include videos that exist in both MongoDB and S3
+        for video in mongo_videos:
+            video_id = video.get("id")
+            if video_id in s3_files:
+                print(f"Found matching video in both MongoDB and S3: {video_id}")
+                videos.append({
+                    "id": video_id,
+                    "title": video.get("title", video_id),
+                    "description": video.get("description", ""),
+                    "thumbnailUrl": video.get("thumbnail_url", ""),
+                    "uploadDate": video.get("upload_date", ""),
+                    "duration": video.get("duration", ""),
+                })
+            else:
+                print(f"Video {video_id} exists in MongoDB but not in S3")
 
-        print(f"Returning {len(videos)} videos")
+        print(f"Returning {len(videos)} videos that exist in both MongoDB and S3")
         return jsonify(videos)
     except Exception as e:
         print(f"Error listing videos: {str(e)}")
@@ -256,6 +270,136 @@ def upload_video():
     except Exception as e:
         print(f"Unexpected error in upload_video: {str(e)}")
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+
+
+@app.route("/videos/<video_id>", methods=["DELETE"])
+@jwt_required()
+def delete_video(video_id):
+    try:
+        # Decode the URL-encoded video_id
+        decoded_video_id = unquote(video_id)
+        print(f"Starting delete operation for video. Raw ID: {video_id}, Decoded ID: {decoded_video_id}")
+        
+        # Get user identity
+        current_user_id = get_jwt_identity()
+        if not current_user_id:
+            print("Authentication failed: No user identity")
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Get user info to check role
+        user = db.users.find_one({"_id": ObjectId(current_user_id)})
+        if not user:
+            print(f"User not found: {current_user_id}")
+            return jsonify({"error": "User not found"}), 404
+
+        if user.get("role") != "teacher":
+            print(f"Unauthorized role: {user.get('role')}")
+            return jsonify({"error": "Teacher access required"}), 403
+
+        # Find video in MongoDB using decoded ID
+        video = db.videos.find_one({"id": decoded_video_id})
+        if not video:
+            print(f"Video not found in MongoDB: {decoded_video_id}")
+            return jsonify({"error": "Video not found"}), 404
+
+        print(f"Found video in MongoDB: {video}")
+
+        # Delete from S3
+        video_deleted = False
+        try:
+            print("Attempting to delete from S3...")
+            print(f"S3 Bucket Name: {BUCKET_NAME}")
+
+            # First, list all objects in the bucket to find our video
+            try:
+                print("Listing objects in S3 bucket...")
+                response = s3.list_objects_v2(Bucket=BUCKET_NAME)
+                if "Contents" not in response:
+                    print("No objects found in S3 bucket")
+                else:
+                    print(f"Found {len(response['Contents'])} objects in bucket")
+                    
+                    # Print all objects for debugging
+                    print("Objects in bucket:")
+                    for item in response["Contents"]:
+                        print(f"- {item['Key']}")
+
+                    # Try to find and delete our video
+                    for item in response["Contents"]:
+                        key = item["Key"]
+                        print(f"\nChecking object: {key}")
+                        
+                        # Check various possible matches
+                        is_match = (
+                            key == decoded_video_id or  # Exact match
+                            key == video_id or  # Match with original ID
+                            key.startswith(f"{decoded_video_id}.") or  # Match with extension
+                            key.startswith(f"{video_id}.") or  # Match with original ID and extension
+                            key.endswith(f"/{decoded_video_id}") or  # Match with path
+                            key.endswith(f"/{video_id}")  # Match with path and original ID
+                        )
+                        
+                        if is_match:
+                            print(f"Found matching video in S3: {key}")
+                            try:
+                                # Try to delete the object
+                                print(f"Attempting to delete S3 object: {key}")
+                                delete_response = s3.delete_object(Bucket=BUCKET_NAME, Key=key)
+                                print(f"S3 delete_object response: {delete_response}")
+                                
+                                # Verify deletion
+                                try:
+                                    s3.head_object(Bucket=BUCKET_NAME, Key=key)
+                                    print(f"Warning: Object still exists after deletion: {key}")
+                                except s3.exceptions.ClientError as e:
+                                    if e.response['Error']['Code'] == '404':
+                                        print(f"Confirmed object deletion: {key}")
+                                        video_deleted = True
+                                        break
+                                    else:
+                                        print(f"Error checking object existence: {str(e)}")
+                            except Exception as del_err:
+                                print(f"Error during deletion of {key}: {str(del_err)}")
+                                continue
+
+            except Exception as list_err:
+                print(f"Error listing S3 objects: {str(list_err)}")
+
+            if not video_deleted:
+                print(f"Warning: Video file not found or could not be deleted from S3: {decoded_video_id}")
+                # Continue with MongoDB deletion even if S3 file is not found or couldn't be deleted
+
+        except Exception as e:
+            print(f"S3 deletion error: {str(e)}")
+            # Don't return error here, try to delete from MongoDB anyway
+            print("Continuing with MongoDB deletion despite S3 error")
+
+        # Delete from MongoDB using decoded ID
+        try:
+            print("Deleting from MongoDB...")
+            result = db.videos.delete_one({"id": decoded_video_id})
+            if result.deleted_count == 0:
+                print(f"Warning: No document deleted from MongoDB: {decoded_video_id}")
+            else:
+                print("MongoDB deletion successful")
+        except Exception as e:
+            print(f"MongoDB deletion error: {str(e)}")
+            return jsonify({"error": f"Failed to delete from MongoDB: {str(e)}"}), 500
+
+        # Return appropriate response based on deletion status
+        if video_deleted:
+            print("Video successfully deleted from both S3 and MongoDB")
+            return jsonify({"message": "Video deleted successfully from both S3 and MongoDB"}), 200
+        else:
+            print("Video deleted from MongoDB but may still exist in S3")
+            return jsonify({
+                "message": "Video deleted from database but may still exist in storage",
+                "warning": "S3 deletion may have failed"
+            }), 200
+
+    except Exception as e:
+        print(f"Unexpected error in delete_video: {str(e)}")
+        return jsonify({"error": f"Delete failed: {str(e)}"}), 500
 
 
 # 5001 is the default port for video service
