@@ -6,7 +6,11 @@ services:
     build: ./frontend
     ports:
       - "8080:8080"
+<<<<<<< HEAD
     depends_on: 
+=======
+    depends_on:
+>>>>>>> 59114564bc6388945419a18de616d2d475a202ab
       - auth_service
       - video_service
       - watchlist_service

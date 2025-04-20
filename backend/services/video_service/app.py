@@ -27,6 +27,7 @@ db = client.EDUCATIONAL_VIDEO_STREAMING_DB
 
 
 # AWS Configuration
+<<<<<<< HEAD
 try:
     region = os.getenv("AWS_REGION", "us-east-1")
     s3 = boto3.client(
@@ -43,6 +44,15 @@ try:
 except Exception as e:
     print(f"Error initializing S3 client: {str(e)}")
     raise
+=======
+s3 = boto3.client(
+    "s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name=os.getenv("AWS_REGION"),
+    config=Config(signature_version="s3v4"),
+)
+>>>>>>> 59114564bc6388945419a18de616d2d475a202ab
 
 BUCKET_NAME = os.getenv("S3_BUCKET")
 
