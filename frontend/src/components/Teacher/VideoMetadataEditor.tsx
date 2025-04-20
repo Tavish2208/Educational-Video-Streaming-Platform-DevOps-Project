@@ -10,7 +10,6 @@ const VideoMetadataEditor: React.FC = () => {
     title: "",
     description: "",
     thumbnailUrl: "",
-    duration: "",
   });
 
   useEffect(() => {
@@ -32,7 +31,6 @@ const VideoMetadataEditor: React.FC = () => {
       title: video.title || "",
       description: video.description || "",
       thumbnailUrl: video.thumbnailUrl || "",
-      duration: video.duration || "",
     });
   };
 
@@ -81,11 +79,6 @@ const VideoMetadataEditor: React.FC = () => {
           <div className="form-group">
             <label>Thumbnail URL:</label>
             <input type="url" value={formData.thumbnailUrl} onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })} />
-          </div>
-
-          <div className="form-group">
-            <label>Duration (e.g., "5:30"):</label>
-            <input type="text" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} />
           </div>
 
           <button type="submit">Update Metadata</button>

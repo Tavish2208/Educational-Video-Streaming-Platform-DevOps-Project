@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import axios from "axios";
 import { API_ENDPOINTS } from "../../config/api.config";
 import "./Register.style.css";
@@ -38,6 +38,7 @@ const Register: React.FC = () => {
 
   return (
     <div className="register-container">
+      <h2>Create Account</h2>
       <form onSubmit={handleSubmit}>
         {error && <div className="error-message">{error}</div>}
         <div className="form-group">
@@ -68,6 +69,9 @@ const Register: React.FC = () => {
           Register
         </button>
       </form>
+      <div className="register-footer">
+        Already have an account? <Link to="/login">Sign in</Link>
+      </div>
     </div>
   );
 };

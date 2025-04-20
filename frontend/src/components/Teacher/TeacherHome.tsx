@@ -4,6 +4,7 @@ import { getVideos } from "../../services/api";
 import { Video } from "../../types/types";
 import VideoCard from "../Video/VideoCard";
 import axios from "axios";
+import "./TeacherHome.style.css";
 
 const TeacherHome: React.FC<RouteComponentProps> = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -39,14 +40,6 @@ const TeacherHome: React.FC<RouteComponentProps> = () => {
         >
           Upload New Video
         </button>
-      </div>
-
-      <div className="stats-section">
-        <div className="stat-card">
-          <h3>Total Videos</h3>
-          <p>{videos.length}</p>
-        </div>
-        {/* Add more statistics as needed */}
       </div>
 
       <div className="videos-section">

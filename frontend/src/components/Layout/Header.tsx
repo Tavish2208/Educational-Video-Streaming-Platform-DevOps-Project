@@ -29,9 +29,20 @@ const Header: React.FC = () => {
     return location.pathname === path;
   };
 
+  const isAuthPage = () => {
+    return location.pathname === "/login" || location.pathname === "/register";
+  };
+
   return (
     <header>
       <nav>
+        {isAuthPage() && (
+          <div className="brand">
+            <Link to="/" className="brand-link">
+              <span className="brand-name">EduStream</span>
+            </Link>
+          </div>
+        )}
         <div className="nav-links">
           {isAuthenticated && (
             <>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import AuthService from "../../services/auth"; // Corrected import path
 import "./Login.style.css";
 
@@ -22,6 +22,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-container">
+      <h2>Welcome Back</h2>
       <form onSubmit={handleSubmit}>
         {error && <div className="error-message">{error}</div>}
         <div className="form-group">
@@ -34,6 +35,9 @@ const Login: React.FC = () => {
           Login
         </button>
       </form>
+      <div className="login-footer">
+        Don't have an account? <Link to="/register">Sign up</Link>
+      </div>
     </div>
   );
 };
