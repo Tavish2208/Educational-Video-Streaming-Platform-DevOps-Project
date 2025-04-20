@@ -1,0 +1,7 @@
+boto3
+flask
+flask-cors
+flask-jwt-extended
+pymongo
+python-dotenv
+bcrypt

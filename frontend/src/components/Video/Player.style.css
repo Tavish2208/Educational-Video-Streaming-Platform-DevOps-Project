@@ -1,0 +1,127 @@
+.video-player-container {
+  max-width: 900px;
+  margin: 1.5rem auto;
+  padding: 0 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.video-player-wrapper {
+  position: relative;
+  padding-top: 52.25%;
+  background: #1a202c;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  margin: 0 -20px;
+}
+
+.video-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.video-info {
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.video-info h1 {
+  font-size: 1.5rem;
+  color: #2d3748;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.video-description {
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #4a5568;
+  font-size: 1rem;
+}
+
+.error {
+  text-align: center;
+  padding: 2rem;
+  color: #e53e3e;
+  font-size: 1rem;
+  background: #fff5f5;
+  border-radius: 8px;
+  border: 1px solid #feb2b2;
+}
+
+.watchlist-button {
+  padding: 0.75rem 2rem;
+  background: #3182ce;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  white-space: nowrap;
+}
+
+.watchlist-button:hover {
+  background: #2b6cb0;
+  transform: translateY(-1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.watchlist-button.in-watchlist {
+  background: #e53e3e;
+  min-width: 180px;
+}
+
+.watchlist-button.in-watchlist:hover {
+  background: #c53030;
+}
+
+@media (max-width: 768px) {
+  .video-player-container {
+    margin: 1rem auto;
+    padding: 0 15px;
+  }
+
+  .video-player-wrapper {
+    padding-top: 56.25%;
+    margin: 0 -15px;
+  }
+
+  .video-info {
+    padding: 1rem 0;
+  }
+
+  .video-info h1 {
+    font-size: 1.25rem;
+  }
+
+  .video-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .watchlist-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    min-width: 100px;
+  }
+}
